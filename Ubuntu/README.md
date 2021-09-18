@@ -138,6 +138,9 @@
  설치 완료  
 </p>
 
+++ 출처 및 참고 사이트
+https://dreamdeveloper403.tistory.com/28
+
 # Ubuntu github 사용법
 
 1. github 설치  
