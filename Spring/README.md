@@ -9,6 +9,13 @@
     - [회원 Repository 테스트 케이스](#회원-Repository-테스트-케이스)
     - [회원 서비스 개발](#회원-서비스-개발)
     - [회원 서비스 테스트](#회원-서비스-테스트)
+  - [Spring Bean과 의존관계](#Spring-Bean과-의존관계)
+    - [컴포넌트 스캔과 자동 의존관계 설정](#컴포넌트-스캔과-자동-의존관계-설정)
+    - [자바 코드로 직접 스프링 빈 등록하기](#자바-코드로-직접-스프링-빈-등록하기)
+  - [회원 관리 예제(웹 MVC 개발)](#회원-관리-예제(웹-MVC-개발))
+    - [회원 웹 기능(홈 화면 추가)](#회원-웹-기능(홈-화면-추가))
+    - [회원 웹 기능(등록)](#회원-웹-기능(등록))
+    - [회원 웹 기능(조회)](#회원-웹-기능())
 
 
 
@@ -328,5 +335,19 @@ class MemberServiceTest {
 BeforeEach를 통해서 동작하기 전에 넣어주면 된다.  
 1. MemoryMemberRepository를 생성해주고 memberRepository에 넣어주고
 2. MemberService에서 memberRepository를 넣어준다 (MemberService 확인)
+  
+  
+
+  # 스프링 빈과 의존관계
+  
+  # 컴포넌트 스캔과 자동 의존관계 설정
+  
+  > TIP?  
+  > getter / setter / 생성자 자동 생성 : Alt + Insert
+  
+  
+  
+  
+  
   
   
