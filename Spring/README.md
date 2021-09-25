@@ -7,7 +7,8 @@
     - [API](#API)
   - [회원 관리 예제](#회원-관리-예제)
     - [회원 Repository 테스트 케이스](#회원-Repository-테스트-케이스)
-
+    - [회원 서비스 개발](#회원-서비스-개발)
+    - [회원 서비스 테스트](#회원-서비스-테스트)
 
 
 
@@ -180,5 +181,152 @@ Test하는 곳에서 afterEach를 활용하여 clearstore를 해주어야 함.
 @AfterEach를 사용하면 각 테스트가 종료될 때 마다 이 기능을 실행  
 
 
+# 회원 서비스 개발  
+> TIP  
+> Ctrl + Alt + V 단축키를 누르면 자동으로 Return 값을 적어준다.  
+> ex) memberRespository.findByName(member.getName()) 작성 후 단축키 입력시 Optional<Member> 알아서 작성해줌  
+
+- 회원가입  
+조건 : 같은 이름이 있는 중복 회원 x  
+```java
+public Long join(Member member){
+  Optional<Member> result = memberRepository.findByName(member.getName());  
+  result.ifPresent(m -> {
+    throw new IllegalStateException("이미 존재하는 회원입니다.");
+  });
+  
+  memberRepository.save(member);
+  return member.getId();
+}
+```
+
+1. findByName으로 name을 찾아본다.  
+2. 만약 result가 ifPresent (값이 존재하면)  
+3. throw new IllegalStateException으로 넘겨준다    
+  
+옛날에는 if null이면 형식으로 코딩이 필요했으나 지금은 Optional 덕분에 바로 ifPresent 형식으로 꺼내볼 수 있다.  
+Member member = result.get(); 형식으로 꺼내와도 되긴 하지만 직접 바로 꺼내는것을 권장하지는 않는다.  
+ ++ result.orElseGet : 값이 존재하면 꺼내오고 존재하지 않으면 디폴트 값을 들고오도록 함.  
+ 
+``` java
+    public Long join(Member member) {
+        validateDuplicateMember(member); //중복 회원 검증
+        memberRepository.save(member);
+        return member.getId();
+    }
+    private void validateDuplicateMember(Member member) { 
+        memberRepository.findByName(member.getName())
+                .ifPresent(m -> {
+                    throw new IllegalStateException("이미 존재하는 회원입니다.");
+                });
+    }
+```
+- 어차피 memberRepository.findByName 반환값이 Optional이므로 바로 memberRespository.findByName(member.getName()).ifPresent(.... 라고 해줘도 된다.
+- 변경 한 후의 코드를 보면 findByName해서 로직이 나오므로 메서드로 뽑는게 더 좋다.  
+
+Repository는 save, findById 와 같이 데이터를 넣었다 뺐다 하는 느낌이 강한 반면  
+Service는 join, findMember 등과 같이 네이밍이 비지니스적이랑 가깝다.   
+Service 코드는 비지니스적에 의존적이여야 기획자 혹은 개발자가 문제 발생시에 찾기가 쉽다.  
 
 
+# 회원 서비스 테스트
+
+> TIP 
+> MemberService 위에서 Ctrl + Shift + T 를 누르면 Test 생성 가능  
+> Shift + F10 이전에 실행했던 코드를 다시 실행해줌  
+  
+Build 될 때 Test코드는 배포되지 않으므로 Test 코드는 한글로 적어도 괜찮음.  
+
+```java
+    @Test
+    public void 중복_회원_예외(){
+        //given
+        Member member1 = new Member();
+        member1.setName("spring");
+
+        Member member2 = new Member();
+        member2.setName("spring");
+
+        //when
+        memberService.join(member1);
+         IllegalStateException e = assertThrows(IllegalStateException.class, () -> memberService.join(member2));
+        assertThat(e.getMessage()).isEqualTo("이미 존재하는 회원입니다.");
+        
+        /*
+        try{
+            memberService.join(member2);
+            fail();
+        }catch (IllegalStateException e){
+            assertThat(e.getMessage()).isEqualTo("이미 존재하는 회원입니다");
+        }
+        */
+    }
+```
+- try catch 문 보다 assertThrows라는 문법을 사용하는 것이 더 좋음  
+`` assertThrows(IllegalStateException.class, () -> memberService.join(member2)); ``  
+memberSerice.join을 해서 member2를 넣으면 IllegalStateException.class 예외가 발생을 해야한다.  
+만약 IllegalStateException 대신 NullPointException 실행 시 오류가 발생하게 된다.  
+
+## DI (Dependency Injection)
+
+- MemberService
+``` java
+public class MemberService {
+  private final MemberRepository memberRepository = new MemberRepository();
+  ....
+}
+```
+  
+- MemberServiceTest
+``` java
+class MemberServiceTest {
+  MemberService memberService = new MemberService();
+  MemoryMemberRepository memberRepository = new MemoryMemberRepository();
+  ...
+}
+```  
+  
+- MemoryMemberRepository
+```java
+public class MemoryMemberRepository implements MemberRepository {
+    private static Map<Long, Member> store = new HashMap<>();
+    ...
+}
+```
+  
+Service 에서 memberRepository도 new로 객체 생성을 하고 Test에서 memberRepository도 new로 객체 생성을 한다.  
+즉, 두개가 서로 다른 객체이다.  
+MemoryMemberRepository에서 store이 static으로 선언되어 있기 때문에 인스턴스와 상관없이 클래스에 붙는것이기 때문에 현재는 상관없으나  
+new로 다른 객체 repsository가 생성이 되면 다른 인스턴스이기 때문에 내용물이 달라질 수도 있다.  
+
+즉, 현재에는 testservice와 service가 각각 다른 repository이기 때문에 현재 Repository에서 static이라 문제는 없으나 현재 테스트는 다른 repository로 테스트 중이다. 그렇기 때문에 같은 것으로 테스트 하도록 변경을 해주어야 한다.  
+  
+- MemberService
+```java
+public class MemberService {
+    private final MemberRepository memberRepository;
+
+    public MemberService(MemberRepository memberRepository){
+        this.memberRepository = memberRepository;
+    }
+    ...
+```
+직접 new로 생성하는 것이 아닌 MemberReposiory를 외부에서 넣어주도록 바꿔줌.  
+ 
+- MemberServiceTest
+```java
+class MemberServiceTest {
+    MemberService memberService;
+    MemoryMemberRepository memberRepository ;
+
+    @BeforeEach
+    public void beforeEach(){
+        memberRepository = new MemoryMemberRepository();
+        memberService = new MemberService(memberRepository);
+    }
+```
+BeforeEach를 통해서 동작하기 전에 넣어주면 된다.  
+1. MemoryMemberRepository를 생성해주고 memberRepository에 넣어주고
+2. MemberService에서 memberRepository를 넣어준다 (MemberService 확인)
+  
+  
