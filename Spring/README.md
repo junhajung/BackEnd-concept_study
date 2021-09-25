@@ -12,12 +12,11 @@
   - [Spring Bean과 의존관계](#Spring-Bean과-의존관계)
     - [컴포넌트 스캔과 자동 의존관계 설정](#컴포넌트-스캔과-자동-의존관계-설정)
     - [자바 코드로 직접 스프링 빈 등록하기](#자바-코드로-직접-스프링-빈-등록하기)
-  - [회원 관리 예제(웹 MVC 개발)](#회원-관리-예제(웹-MVC-개발))
-    - [회원 웹 기능(홈 화면 추가)](#회원-웹-기능(홈-화면-추가))
-    - [회원 웹 기능(등록)](#회원-웹-기능(등록))
-    - [회원 웹 기능(조회)](#회원-웹-기능())
-
-
+  - [Spring DB 접근 기술](#Spring-DB-접근-기술)
+    - [Spring 통합 테스트](#Spring-통합-테스트)
+    - [Spring JdbcTemplate](#Spring-JdbcTemplate)
+    - [JPA](#JPA)
+    - [Spring 데이터 JPA](#Spring-데이터-JPA)
 
 # 인프런 Spring 강의 정리 (무료 ver)
 
@@ -343,8 +342,88 @@ BeforeEach를 통해서 동작하기 전에 넣어주면 된다.
   # 컴포넌트 스캔과 자동 의존관계 설정
   
   > TIP?  
-  > getter / setter / 생성자 자동 생성 : Alt + Insert
+  > getter / setter / 생성자 자동 생성 : Alt + Insert  
   
+  ### Spring Bean을 등록하는 두가지 방법  
+  
+  **1. 컴포넌트 스캔과 자동 의존관계 설정 ** 
+  @Controller, @Service, @Repository, @Autowired 등 어노테이션을 사용하여 Spring이 자동으로 의존관계를 설정해주는 것   
+  단, 실행시키는 Application이 package.spring.spring과 같은 본인이 설정한 Spring Package가 아니라 다른 하위 패키지에서 @Controller라고 붙이는 것은 Spring에서 Component Scan을 하지 않기 때문에 사용이 안된다.  
+  > 참고 : Spring은 Spring Container에 Spring Bean을 등록할 때 기본으로 Singleton으로 등록한다.  
+  > 따라서 같은 Spring Bean 이면 모두 같은 인스턴스다. 설정으로 Singleton이 아니게 설정할 수 있지만 특별한 경우를 제외하면 대부분 Singleton을 사용한다.  
+  
+  **2. 자바 코드로 직접 스프링 빈 등록하기**  
+  ``` java
+  @Configuration
+  public class SpringConfig {
+
+      @Bean
+      public MemberService memberService(){
+          return new MemberService(memberRepository());
+      }
+
+      @Bean
+      public MemberRepository memberRepository() {
+          return new MemoryMemberRepository();
+      }
+  }
+  ```
+  @Configuration 읽고 Spring Bean에 등록하라고 인식하고 @Bean 코드의 로직을 호출해서 Spring Bean에 등록.  
+  
+  ### DI?
+  - 필드 주입 : @Autowired private MemberService memberService; (권장 x)  
+  - setter 주입  
+  ```java
+    @Controller
+    public class MemberController {
+      private MemberService memberService;
+
+      @Autowired
+      public void setMemberService(MemberService memberService) {
+          this.memberService = memberService;
+      }
+    }
+  ```
+  누군가가 MemberController에 접근을 하려고 하면 public으로 열려있어야만 가능하다.  
+  중간에 잘못 변경하면 문제가 생기게 된다.  
+  누군가 memberService.setMemberRepository(); 와 같이 호출을 하면 public이라 아무나 호출이 가능하다.  
+  개발은 최대한 호출하지 않아야 하는 메서드는 호출되지 않아야 한다.  
+  조립 시점에 생성자로 한번만 조립해놓고 끝내야 한다.  
+  생성하는 시점에만 실행되고 그 이후에 변경을 못하도록 막아버릴 수 있도록 해야한다.  
+  
+  - 생성자 주입 (가장 좋음)  
+  ``` java
+      @Autowired
+      public MemberController(MemberService memberService) {
+          this.memberService = memberService;
+      }
+  ```
+  처음에 App이 Spring Container에 올라가고 조립되는 시점에 의존 주입되고 끝난다.  
+  
+  
+  ### 주의
+  @Autowired를 통한 DI는 MemberController, memberService 등과 같이 Spring이 관리하는 객체에서만 동작한다. Spring 빈으로 등록하지 않고 내가 직접 생성한 객체에서는 동작하지 않는다.  
+  
+  ex) SpringConfig에서 MemberService는 관리하고 있다.  
+  만약 관리하지 않는다면 MemberService에서 @Autowired는 사용 불가능.  
+  
+  ``` java 
+  @Autowired
+  public static void main(String[] args){
+    MemberService memberService = new MemberService(..);
+  }
+  ```
+  이 코드는 당연히 작동하지 않는다.  
+  내가 생성한 객체는 의존 주입이 불가능 하기 때문이다.  
+  Spring Container에 올라간 내용들만 @Autowired가 사용 가능하다.  
+  
+  
+  # Spring DB 접근 기술
+  
+  
+  
+  
+
   
   
   
