@@ -21,6 +21,7 @@
 
 ## 소켓의 통신방식
 <p align="center"> <img src = "https://user-images.githubusercontent.com/48474613/133589336-3a803196-fcd2-4eff-b873-b143091aa1cf.png" width="70%" height="70%"/></p>  
+
 1. Client class 생성  
 2. 해당 클래스에 서버의 IP 주소와 Port번호를 넣고 출력 스트림 (Get Outputstream)으로 넘어간 후 Server Socket에 접근  
 3. Server Socket class는 클라이언트가 접속을 했는지 체크  
